@@ -4,6 +4,26 @@ Description: >-
   This Template creates a EC2 Auto Scaling group behind a Elastic LoadBalancer
 
 Resources:
+  theloadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      LoadBalancerName: theLoadBalancer
+      AvailabilityZones:
+        - "us-east-2a"
+        - "us-east-2b"
+        - "us-east-2c"
+      HealthCheck:
+        HealthyThreshold: "2"
+        Interval: "10"
+        Target: HTTP:80/
+        Timeout: "4"
+        UnhealthyThreshold: '3'
+      Listeners:
+        - InstancePort: "80"
+          InstanceProtocol: HTTP
+          LoadBalancerPort: "443"
+          Protocol: HTTP
+
   theServersLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
@@ -11,6 +31,7 @@ Resources:
         ImageId: "ami-077e31c4939f6a2f3"
         InstanceType: t2.micro
         KeyName: "bbtgraphicswebsite1"
+
   myServers:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
@@ -20,9 +41,13 @@ Resources:
         - "us-east-2b"
         - "us-east-2c"
       DesiredCapacity: "2"
+      HealthCheckGracePeriod: 300
+      HealthCheckType: ELB
       LaunchTemplate:
         LaunchTemplateId: !Ref theServersLaunchTemplate
         Version: !GetAtt theServersLaunchTemplate.LatestVersionNumber
+      LoadBalancerNames:
+        - theLoadBalancer
       MaxSize: "6"
       MinSize: "1"
 
